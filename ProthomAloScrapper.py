@@ -15,6 +15,9 @@ class ProthomAloScrapper:
         self.csv_writer = csv.writer(self.csv_file, delimiter=",")
         self.csv_writer.writerow(["title", "content", "tags"])
 
+        self.total_scraped = 0
+        self.total_errors = 0
+
     def scroll_to_element(self, browser, element):
         self.driver.execute_script("arguments[0].scrollIntoView();", element)
 
@@ -35,6 +38,8 @@ class ProthomAloScrapper:
             self.scroll_to_element(self.driver, ad_banner_close)
             ad_banner_close.click()
             time.sleep(3)
+            print("Ad banner removed...")
+            print("Continuing...")
             return True
         except Exception as e:
             pass
@@ -61,7 +66,7 @@ class ProthomAloScrapper:
             iterations -= 1
             time.sleep(3)
 
-    def get_news_links(self):
+    def get_news_links(self, total_iterations=10):
         if self.news_links:
             return self.news_links
 
@@ -69,7 +74,7 @@ class ProthomAloScrapper:
 
         # load all links before starting to process
         print("Getting news article links...")
-        self.load_more(30)
+        self.load_more(total_iterations)
 
         stories_container = self.driver.find_element_by_class_name(
             "searchStories1AdWithLoadMore-m__stories__2SFip"
@@ -112,15 +117,38 @@ class ProthomAloScrapper:
             # write output to csv
             self.csv_writer.writerow([heading, paras, tags])
 
-        except Exception as e:
-            print("exception on article csv write", str(e))
+            self.total_scraped += 1
 
-    def batch_scrape(self):
+        except Exception as e:
+            print(
+                f"Error occured for while scraping URL: {url}. Either scrape requirements were invalid or IO error occured"
+            )
+            self.total_errors += 1
+
+    def batch_scrape(self, total_iteraions=10):
+        """
+        Batch scrape news articles
+        Iterations = number of times 'load more' button to click
+        Initially there are 10 articles. One iteration adds 6 news articles/
+        So iteration = 20 should produce 10 + 20 * 6 = 130 articles
+
+        Please note that final output might not have 130 articles because
+        some might get discarded due to errors or being video-only articles
+        """
+        self.total_errors = 0
+        self.total_scraped = 0
+        start_time = time.time()
+
         print("Starting batch scraping...")
         self.get_news_links()
         for link in self.news_links:
             self.scrape_article(self.driver, link)
+
+        end_time = time.time()
         print(" -- COMPLETE --")
+        print(f"Time required: {end_time - start_time} sec")
+        print(f"Total Scraped Articles: {self.total_scraped}")
+        print(f"Total Errors: {self.total_errors}")
 
     def __del__(self):
         self.driver.close()
@@ -129,4 +157,4 @@ class ProthomAloScrapper:
 
 if __name__ == "__main__":
     pa_scrapper = ProthomAloScrapper()
-    pa_scrapper.batch_scrape()
+    pa_scrapper.batch_scrape(total_iteraions=2000)
