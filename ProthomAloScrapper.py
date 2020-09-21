@@ -44,27 +44,27 @@ class ProthomAloScrapper:
         except Exception as e:
             pass
 
-    def load_more(self, iterations=10):
+    def load_more(self, total_iterations=10):
         """
         Click the load more button to load more news in the list. At this moment,
         there are 10 inital news in the list, and 5 more are added each time load button
         is clicked. The 'iterations' refer to no of times to click the load button.
         """
         ad_banner_removed = False
-        while iterations > 0:
-            load_button = self.driver.find_element_by_class_name(
-                "more-m__wrapper__2sxTa"
-            )
-            self.scroll_to_element(self.driver, load_button)
+        load_button = self.driver.find_element_by_class_name("more-m__wrapper__2sxTa")
+        temp_iter = total_iterations
 
+        while temp_iter > 0:
+            self.scroll_to_element(self.driver, load_button)
             if not ad_banner_removed:
                 print("Trying to remove ad banner...")
                 time.sleep(3)
                 ad_banner_removed = self.remove_ad_banner()
 
             load_button.click()
-            iterations -= 1
-            time.sleep(3)
+            temp_iter -= 1
+            print(f"Iteration {total_iterations - temp_iter}/{total_iterations}")
+            time.sleep(2)
 
     def get_news_links(self, total_iterations=10):
         if self.news_links:
@@ -82,14 +82,17 @@ class ProthomAloScrapper:
         story_cards = stories_container.find_elements_by_class_name(
             "customStoryCard9-m__wrapper__yEFJV"
         )
-        self.news_links = [
-            card.find_element_by_tag_name("a").get_attribute("href")
-            for card in story_cards
-        ]
 
+        # populate links. Set is used to avoid duplicates
+        links = set()
+        for card in story_cards:
+            url = card.find_element_by_tag_name("a").get_attribute("href")
+            links.add(url)
+
+        self.news_links = list(links)
         return self.news_links
 
-    def scrape_article(self, browser, url, wait_time=5):
+    def scrape_article(self, browser, url):
         try:
             # avoid only-video type articles
             if "video/" in url:
@@ -125,7 +128,7 @@ class ProthomAloScrapper:
             )
             self.total_errors += 1
 
-    def batch_scrape(self, total_iteraions=10):
+    def batch_scrape(self, total_iterations=10):
         """
         Batch scrape news articles
         Iterations = number of times 'load more' button to click
@@ -140,7 +143,7 @@ class ProthomAloScrapper:
         start_time = time.time()
 
         print("Starting batch scraping...")
-        self.get_news_links()
+        self.get_news_links(total_iterations)
         for link in self.news_links:
             self.scrape_article(self.driver, link)
 
@@ -157,4 +160,4 @@ class ProthomAloScrapper:
 
 if __name__ == "__main__":
     pa_scrapper = ProthomAloScrapper()
-    pa_scrapper.batch_scrape(total_iteraions=2000)
+    pa_scrapper.batch_scrape(total_iterations=200)
