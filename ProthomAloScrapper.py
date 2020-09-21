@@ -4,6 +4,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import StaleElementReferenceException
 
 
 class ProthomAloScrapper:
@@ -54,23 +55,30 @@ class ProthomAloScrapper:
         load_button = self.driver.find_element_by_class_name("more-m__wrapper__2sxTa")
         temp_iter = total_iterations
 
-        while temp_iter > 0:
-            self.scroll_to_element(self.driver, load_button)
-            if not ad_banner_removed:
-                print("Trying to remove ad banner...")
-                time.sleep(3)
-                ad_banner_removed = self.remove_ad_banner()
+        try:
+            while temp_iter > 0:
+                self.scroll_to_element(self.driver, load_button)
+                if not ad_banner_removed:
+                    print("Trying to remove ad banner...")
+                    time.sleep(3)
+                    ad_banner_removed = self.remove_ad_banner()
 
-            load_button.click()
-            temp_iter -= 1
-            print(f"Iteration {total_iterations - temp_iter}/{total_iterations}")
-            time.sleep(2)
+                load_button.click()
+                temp_iter -= 1
+                print(f"Iteration {total_iterations - temp_iter}/{total_iterations}")
+                time.sleep(2)
+        except StaleElementReferenceException as e:
+            print("Reached end of news for the given timeframe")
 
     def get_news_links(self, total_iterations=10):
         if self.news_links:
             return self.news_links
 
         self.driver.get(self.BASE_URL)
+
+        print("You can set date range filters now.")
+        print("Watiting for user preparation. Press ENTER to continue")
+        input("")
 
         # load all links before starting to process
         print("Getting news article links...")
