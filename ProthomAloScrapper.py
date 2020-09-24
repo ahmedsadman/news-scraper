@@ -1,3 +1,4 @@
+import sys
 import time
 import csv
 from selenium import webdriver
@@ -8,11 +9,11 @@ from selenium.common.exceptions import StaleElementReferenceException
 
 
 class ProthomAloScrapper:
-    def __init__(self):
+    def __init__(self, output_file="output.csv"):
         self.BASE_URL = "https://www.prothomalo.com/search"
         self.driver = webdriver.Chrome()
         self.news_links = []
-        self.csv_file = open("output.csv", "w", encoding="utf-8", newline="\n")
+        self.csv_file = open(output_file, "w", encoding="utf-8", newline="\n")
         self.csv_writer = csv.writer(self.csv_file, delimiter=",")
         self.csv_writer.writerow(["title", "content", "tags"])
 
@@ -167,5 +168,5 @@ class ProthomAloScrapper:
 
 
 if __name__ == "__main__":
-    pa_scrapper = ProthomAloScrapper()
+    pa_scrapper = ProthomAloScrapper(sys.argv[1])
     pa_scrapper.batch_scrape(total_iterations=200)
