@@ -2,6 +2,8 @@ import os
 import re
 import string
 import csv
+import time
+from concurrent.futures import ProcessPoolExecutor, wait
 
 def cleanup(content, seperator=" "):
     # remove emails or website links
@@ -42,16 +44,27 @@ def write_clean_data(file, rows):
         csv_writer = csv.writer(fstream, delimiter=",")
         csv_writer.writerows(rows)
 
+def execute_cleanup_task(file):
+    rows = get_cleaned_data(file)
+    write_clean_data(file, rows)
+
 def batch_data_cleanup():
     files = os.listdir('.')
+    tasks = []
+
+    with ProcessPoolExecutor(max_workers=8) as executor:
+        for file in files:
+            if not ".csv" in file:
+                continue
+            tasks.append(executor.submit(execute_cleanup_task, file))
     
-    for file in files:
-        if not ".csv" in file:
-            continue
-        rows = get_cleaned_data(file)
-        write_clean_data(file, rows)
+    wait(tasks)
+        
         
 
 if __name__ == "__main__":
+    start = time.time()
     batch_data_cleanup()
+    end = time.time()
     print("-- CLEANUP COMPLETE --")
+    print(f"Time required: {end - start} seconds")
