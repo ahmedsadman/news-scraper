@@ -7,12 +7,29 @@ from datetime import datetime
 
 
 class ProthomAloApi:
-    def __init__(self, output_file="output.csv"):
+    def __init__(self, output_file=None):
         self.items = []
         self.output_file = output_file
-        self.script_start = None
-        self.script_end = None
         self.ids = set()
+
+    def get_output_filename(self, start_time, end_time):
+        months = [
+            "jan",
+            "feb",
+            "march",
+            "april",
+            "may",
+            "jun",
+            "jul",
+            "aug",
+            "sep",
+            "oct",
+            "nov",
+            "dec",
+        ]
+        t1 = start_time.split("-")
+        t2 = end_time.split("-")
+        return f"{months[int(t1[1]) - 1]}{t1[0]}-{months[int(t2[1]) - 1]}{t2[0]}-{t2[2]}.csv"
 
     def process_article_data(self, data):
         """
@@ -98,6 +115,9 @@ class ProthomAloApi:
         print(f"Total Article: {len(self.items)}")
 
     def scrape_articles(self, start_time, end_time):
+        if self.output_file is None:
+            self.output_file = self.get_output_filename(start_time, end_time)
+
         start_time = api.convert_to_unixtime(start_time)
         end_time = api.convert_to_unixtime(end_time)
         api.fetch(start_time, end_time)
@@ -106,7 +126,7 @@ class ProthomAloApi:
 
 
 if __name__ == "__main__":
-    api = ProthomAloApi(sys.argv[1])
-    api.scrape_articles(sys.argv[2], sys.argv[3])
+    api = ProthomAloApi()
+    api.scrape_articles(sys.argv[1], sys.argv[2])
     # print(api.convert_to_unixtime("7-6-2012"))
     # print(api.convert_to_unixtime("30-6-2012"))
