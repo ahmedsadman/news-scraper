@@ -1,18 +1,22 @@
 import requests
 import time
 import re
+import csv
 
 
 class ProthomAloApi:
-    def __init__(self):
+    def __init__(self, output_file="output.csv"):
         self.items = []
+        self.output_file = output_file
+        self.script_start = None
+        self.script_end = None
 
     def process_article_data(self, data):
         """
         Extract the headline, main content and tags of articles and store in
         items array
         """
-        processed_articles = []  # tuples -> (headline, tags, content)
+        processed_articles = []  # tuples -> (headline, content, tags)
 
         for article in data:
             headline = article["headline"]
@@ -21,7 +25,7 @@ class ProthomAloApi:
 
             if content is not None:
                 # ignore empty content news
-                processed_articles.append((headline, tags, content))
+                processed_articles.append((headline, content, tags))
 
         self.items += processed_articles  # concat array
 
@@ -29,7 +33,7 @@ class ProthomAloApi:
         tags = []
         for item in tag_data:
             tags.append(item["name"])
-        return tags
+        return ",".join(tags)
 
     def process_content(self, cards):
         content = []
@@ -38,12 +42,11 @@ class ProthomAloApi:
                 if element["type"] == "text":
                     text = self.strip_html(element["text"])
                     content.append(text)
-        print(len(content))
         return "".join(content) if len(content) > 0 else None
 
     def strip_html(self, text):
         """Remove all HTML tags from given text"""
-        cleanr = re.compile("<.*?>")
+        cleanr = re.compile("<.*?>|&.*;")
         cleantext = re.sub(cleanr, "", text)
         return cleantext
 
@@ -62,14 +65,21 @@ class ProthomAloApi:
         response = requests.get(request_url)
         response = response.json()
 
-        # print the item headlines for test
-        articles = self.process_article_data(response["items"])
+        self.process_article_data(response["items"])
 
-        for article in self.items:
-            print(article)
-            print("\n")
+    def write_output(self):
+        with open(self.output_file, "w", encoding="utf-8", newline="\n") as f:
+            csv_writer = csv.writer(f, delimiter=",")
+            csv_writer.writerow(("title", "content", "tags"))
+            for item in self.items:
+                csv_writer.writerow(item)
+
+    def show_stat(self):
+        print(f"Total Article: {len(self.items)}")
 
 
 if __name__ == "__main__":
     api = ProthomAloApi()
-    api.fetch(1583863200000, 1584640800000)
+    api.fetch(1583863200000, 1584640800000, limit=100)
+    api.write_output()
+    api.show_stat()
