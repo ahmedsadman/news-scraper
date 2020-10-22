@@ -1,3 +1,4 @@
+import sys
 import requests
 import time
 import re
@@ -55,22 +56,32 @@ class ProthomAloApi:
         cleantext = re.sub(cleanr, "", text)
         return cleantext
 
-    def fetch(self, start_time, end_time, offset=0, limit=20):
+    def fetch(self, start_time, end_time, offset=0, limit=100):
         """
         Method to fetch news data from ProthomAlo advanced search API
         start_time (int) -> unix epoch in milliseconds
         end_time (int) -> unix epoch in milliseconds
         offset (int) -> number of news to skip
         """
-        request_url = (
-            f"https://www.prothomalo.com/api/v1/advanced-search?"
-            + f"fields=headline,tags,cards&offset={offset}&limit={limit}"
-            + f"&sort=latest-published&published-after={start_time}&published-before={end_time}"
-        )
-        response = requests.get(request_url)
-        response = response.json()
+        total = None
+        while total is None or total > 0:
+            print(f"Processing Offset: {offset}, Limit: {limit}")
+            request_url = (
+                f"https://www.prothomalo.com/api/v1/advanced-search?"
+                + f"fields=headline,tags,cards&offset={offset}&limit={limit}"
+                + f"&sort=latest-published&published-after={start_time}&published-before={end_time}"
+            )
+            response = requests.get(request_url)
+            response = response.json()
 
-        self.process_article_data(response["items"])
+            if total is None:
+                total = response["total"]
+            if len(response["items"]) == 0:
+                break
+
+            self.process_article_data(response["items"])
+            offset += limit
+            total -= len(response["items"])
 
     def write_output(self):
         with open(self.output_file, "w", encoding="utf-8", newline="\n") as f:
@@ -82,11 +93,16 @@ class ProthomAloApi:
     def show_stat(self):
         print(f"Total Article: {len(self.items)}")
 
+    def scrape_articles(self, start_time, end_time):
+        start_time = api.convert_to_unixtime(start_time)
+        end_time = api.convert_to_unixtime(end_time)
+        api.fetch(start_time, end_time)
+        api.write_output()
+        api.show_stat()
+
 
 if __name__ == "__main__":
-    api = ProthomAloApi()
-    start_time = api.convert_to_unixtime("1-1-2018")
-    end_time = api.convert_to_unixtime("6-1-2018")
-    api.fetch(start_time, end_time, limit=800)
-    api.write_output()
-    api.show_stat()
+    api = ProthomAloApi(sys.argv[1])
+    # api.scrape_articles(sys.argv[2], sys.argv[3])
+    print(api.convert_to_unixtime("7-6-2012"))
+    print(api.convert_to_unixtime("30-6-2012"))
