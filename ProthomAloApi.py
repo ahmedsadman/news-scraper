@@ -12,6 +12,7 @@ class ProthomAloApi:
         self.output_file = output_file
         self.script_start = None
         self.script_end = None
+        self.ids = set()
 
     def process_article_data(self, data):
         """
@@ -21,6 +22,8 @@ class ProthomAloApi:
         processed_articles = []  # tuples -> (headline, content, tags)
 
         for article in data:
+            if article["id"] in self.ids:
+                continue
             headline = article["headline"]
             tags = self.extract_tags(article["tags"])
             content = self.process_content(article["cards"])
@@ -28,6 +31,7 @@ class ProthomAloApi:
             if content is not None:
                 # ignore empty content news
                 processed_articles.append((headline, content, tags))
+                self.ids.add(article["id"])
 
         self.items += processed_articles  # concat array
 
@@ -103,6 +107,6 @@ class ProthomAloApi:
 
 if __name__ == "__main__":
     api = ProthomAloApi(sys.argv[1])
-    # api.scrape_articles(sys.argv[2], sys.argv[3])
-    print(api.convert_to_unixtime("7-6-2012"))
-    print(api.convert_to_unixtime("30-6-2012"))
+    api.scrape_articles(sys.argv[2], sys.argv[3])
+    # print(api.convert_to_unixtime("7-6-2012"))
+    # print(api.convert_to_unixtime("30-6-2012"))
