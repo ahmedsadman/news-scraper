@@ -45,7 +45,7 @@ class ProthomAloApi:
             tags = self.extract_tags(article["tags"])
             content = self.process_content(article["cards"])
 
-            if content is not None:
+            if content is not None and len(headline) != 0:
                 # ignore empty content news
                 processed_articles.append((headline, content, tags))
                 self.ids.add(article["id"])
