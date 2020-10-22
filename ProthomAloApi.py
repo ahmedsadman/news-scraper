@@ -2,6 +2,7 @@ import requests
 import time
 import re
 import csv
+from datetime import datetime
 
 
 class ProthomAloApi:
@@ -28,6 +29,10 @@ class ProthomAloApi:
                 processed_articles.append((headline, content, tags))
 
         self.items += processed_articles  # concat array
+
+    def convert_to_unixtime(self, datestr):
+        date = datetime.strptime(datestr, "%d-%m-%Y")
+        return int(date.timestamp() * 1000)  # convert to milliseconds
 
     def extract_tags(self, tag_data):
         tags = []
@@ -80,6 +85,8 @@ class ProthomAloApi:
 
 if __name__ == "__main__":
     api = ProthomAloApi()
-    api.fetch(1583863200000, 1584640800000, limit=100)
+    start_time = api.convert_to_unixtime("1-1-2018")
+    end_time = api.convert_to_unixtime("6-1-2018")
+    api.fetch(start_time, end_time, limit=800)
     api.write_output()
     api.show_stat()
