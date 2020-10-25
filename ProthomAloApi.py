@@ -36,7 +36,7 @@ class ProthomAloApi:
         Extract the headline, main content and tags of articles and store in
         items array
         """
-        processed_articles = []  # tuples -> (headline, content, tags)
+        processed_articles = []  # tuples -> (headline, content, tags, published_at)
 
         for article in data:
             if article["id"] in self.ids:
@@ -44,10 +44,11 @@ class ProthomAloApi:
             headline = article["headline"]
             tags = self.extract_tags(article["tags"])
             content = self.process_content(article["cards"])
+            published_at = int(int(article["published-at"]) / 1000)
 
             if content is not None and len(headline) != 0:
                 # ignore empty content news
-                processed_articles.append((headline, content, tags))
+                processed_articles.append((headline, content, tags, published_at))
                 self.ids.add(article["id"])
 
         self.items += processed_articles  # concat array
@@ -89,7 +90,7 @@ class ProthomAloApi:
             print(f"Processing Offset: {offset}, Limit: {limit}")
             request_url = (
                 f"https://www.prothomalo.com/api/v1/advanced-search?"
-                + f"fields=headline,tags,cards&offset={offset}&limit={limit}"
+                + f"fields=headline,tags,published-at,cards&offset={offset}&limit={limit}"
                 + f"&sort=latest-published&published-after={start_time}&published-before={end_time}"
             )
             response = requests.get(request_url)
@@ -107,7 +108,7 @@ class ProthomAloApi:
     def write_output(self):
         with open(self.output_file, "w", encoding="utf-8", newline="\n") as f:
             csv_writer = csv.writer(f, delimiter=",")
-            csv_writer.writerow(("title", "content", "tags"))
+            csv_writer.writerow(("title", "content", "tags", "published_at"))
             for item in self.items:
                 csv_writer.writerow(item)
 
